@@ -1,0 +1,16 @@
+[project]
+name = "sagemaker-fraud-detection-mlops"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "black>=26.10.1",
+    "boto3>=1.43.121",
+    "boto3-stubs>=1.43.121",
+    "isort>=9.0.2",
+    "numpy>=2.5.4",
+    "pandas>=3.1.0",
+    "sagemaker>=3.27.0",
+    "scikit-learn>=1.9.1",
+]
