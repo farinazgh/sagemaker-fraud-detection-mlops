@@ -11,6 +11,7 @@ dependencies = [
     "isort>=9.0.2",
     "numpy>=2.5.4",
     "pandas>=3.1.0",
+    "python-dotenv>=1.2.4",
     "sagemaker>=3.27.0",
     "scikit-learn>=1.9.1",
 ]
