@@ -152,6 +152,7 @@ activemq-data/
 # Environments
 .env
 .envrc
+.lab-state.json
 .venv
 env/
 venv/
