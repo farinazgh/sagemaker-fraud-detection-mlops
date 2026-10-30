@@ -8,9 +8,9 @@ from shared import env, require_role, channels, save_state, wait_training, xgboo
 def main():
     session, region, account, bucket, role, instance = env()
     require_role(role)
-    sm = session.client("sagemaker")
+    sagemaker_client = session.client("sagemaker")
     name = "fraud-baseline-" + datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
-    sm.create_training_job(
+    sagemaker_client.create_training_job(
         TrainingJobName=name,
         AlgorithmSpecification={
             "TrainingImage": xgboost_image(region),
@@ -32,12 +32,13 @@ def main():
             "max_depth": "4",
             "eta": "0.15",
             "subsample": "0.85",
+            "early_stopping_rounds": "10",
         },
         Tags=[{"Key": "Project", "Value": "SageMakerCapstone"}],
     )
     save_state(baseline_job=name)
     print("Started training:", name)
-    job = wait_training(sm, name)
+    job = wait_training(sagemaker_client, name)
     model_artifact = job["ModelArtifacts"]["S3ModelArtifacts"]
     save_state(baseline_artifact=model_artifact)
     print("Completed. Model:", model_artifact)
