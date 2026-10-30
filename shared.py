@@ -3,6 +3,7 @@
 import json
 import os
 from pathlib import Path
+
 import boto3
 from dotenv import load_dotenv
 from sagemaker.core import image_uris
@@ -11,7 +12,7 @@ from sagemaker.core import image_uris
 # override=True makes the .env file take precedence over existing shell values.
 load_dotenv(Path(__file__).resolve().parent / ".env", override=True)
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parent
 STATE_FILE = ROOT / ".lab-state.json"
 
 
@@ -26,6 +27,7 @@ def env():
 
 
 def require_role(role):
+    """Stop early unless a real SageMaker execution role ARN was configured."""
     if not role.startswith("arn:aws:iam::") or "<" in role:
         raise SystemExit(
             "Set SAGEMAKER_ROLE_ARN to your REAL existing SageMaker execution role ARN."
@@ -33,10 +35,22 @@ def require_role(role):
 
 
 def get_state():
+    """Read the project's saved run state, or return an empty state if absent.
+
+    The scripts use this small local JSON file to pass resource names and artifact
+    locations between steps. Returning an empty dictionary on first use lets a
+    workflow begin without requiring a pre-created state file.
+    """
     return json.loads(STATE_FILE.read_text()) if STATE_FILE.exists() else {}
 
 
 def save_state(**updates):
+    """Merge values into the saved run state and persist the updated JSON.
+
+    Each workflow step records only the values it has learned, so merging instead
+    of replacing preserves details saved by earlier steps. The updated state is
+    returned as well, allowing callers to use the same result immediately.
+    """
     s = get_state()
     s.update(updates)
     STATE_FILE.write_text(json.dumps(s, indent=2) + "\n")
@@ -44,12 +58,12 @@ def save_state(**updates):
 
 
 def xgboost_image(region):
-    # Pin the algorithm version; SageMaker Python SDK v2 resolves the regional ECR image.
-
+    """Resolve the regional SageMaker XGBoost container image."""
     return image_uris.retrieve("xgboost", region, version="1.7-1")
 
 
 def channels(bucket):
+    """Describe the training and validation CSV inputs stored in S3."""
     out = []
     for name in ("train", "validation"):
         out.append(
@@ -70,6 +84,7 @@ def channels(bucket):
 
 
 def wait_training(sm, name):
+    """Wait for a training job to stop, then return its completed-job details."""
     sm.get_waiter("training_job_completed_or_stopped").wait(
         TrainingJobName=name, WaiterConfig={"Delay": 30, "MaxAttempts": 60}
     )

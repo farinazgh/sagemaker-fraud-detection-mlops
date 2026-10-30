@@ -9,8 +9,11 @@ from shared import env, require_role, channels, save_state, xgboost_image
 def main():
     session, region, account, bucket, role, instance = env()
     require_role(role)
+
     sagemaker_client = session.client("sagemaker")
+
     name = "fraud-hpo-" + datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
+
     # Limit the search to three trials and run them one at a time.
     sagemaker_client.create_hyper_parameter_tuning_job(
         HyperParameterTuningJobName=name,
@@ -81,7 +84,9 @@ def main():
             f'HPO status: {status}; {result.get("FailureReason", "No reason supplied")}'
         )
     best = result["BestTrainingJob"]
-    desc = sagemaker_client.describe_training_job(TrainingJobName=best["TrainingJobName"])
+    desc = sagemaker_client.describe_training_job(
+        TrainingJobName=best["TrainingJobName"]
+    )
     # Persist the selected trial and its model artifact for downstream scripts.
     save_state(
         best_training_job=best["TrainingJobName"],
