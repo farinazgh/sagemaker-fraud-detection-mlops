@@ -14,7 +14,9 @@ def main():
 
     name = "fraud-hpo-" + datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
 
-    # Limit the search to three trials and run them one at a time.
+    # Submit a Bayesian hyperparameter-tuning job that tests three configurations
+    # sequentially, maximizes validation AUC, and keeps the remaining XGBoost
+    # training settings fixed so the trials are comparable.
     sagemaker_client.create_hyper_parameter_tuning_job(
         HyperParameterTuningJobName=name,
         HyperParameterTuningJobConfig={
@@ -66,6 +68,8 @@ def main():
     print("HPO launched:", name)
     # Poll until SageMaker reports a terminal tuning-job status.
     while True:
+        # Refresh the tuning-job status and completed-trial count so this script
+        # can wait for the full search before attempting to read its best result.
         result = sagemaker_client.describe_hyper_parameter_tuning_job(
             HyperParameterTuningJobName=name
         )
@@ -84,6 +88,8 @@ def main():
             f'HPO status: {status}; {result.get("FailureReason", "No reason supplied")}'
         )
     best = result["BestTrainingJob"]
+    # Fetch the winning training job's details to retrieve the S3 model artifact
+    # produced by that trial for registration or deployment in later steps.
     desc = sagemaker_client.describe_training_job(
         TrainingJobName=best["TrainingJobName"]
     )
