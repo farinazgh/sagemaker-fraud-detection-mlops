@@ -10,6 +10,8 @@ def main():
     require_role(role)
     sagemaker_client = session.client("sagemaker")
     name = "fraud-baseline-" + datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
+    # Submit a baseline XGBoost training job with fixed hyperparameters, processed
+    # train/validation inputs, and S3 output so later workflow steps can use its model.
     sagemaker_client.create_training_job(
         TrainingJobName=name,
         AlgorithmSpecification={
